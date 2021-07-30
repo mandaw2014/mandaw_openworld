@@ -28,7 +28,7 @@ sornhill_rockshell = Entity(model = "sornhill", texture = "sornhill", collider =
 sorntop_mandaw = Entity(model = "sorntop", texture = "sorntop", collider = "mesh", tag = "sorntop", position = (1200, 100, -700), scale = (0.7, 0.7, 0.7))
 sornhill_mandaw = Entity(model = "sornhill", texture = "sornhill", collider = "mesh", tag = "sornhill", position = (1200, 100, -700), scale = (0.7, 0.7, 0.7))
 
-village_1 = Village()
+# village_1 = Village()
 
 s = Sky()
 
@@ -38,18 +38,26 @@ light.color = color.white
 AmbientLight(color = color.rgba(100, 100, 100, 0.1))
 
 sword = Sword()
-sword.enabled = True
 
 bow = Bow()
+
 arrow = Arrow()
 
 player = Player("cube", (-1000, 100, 0), "box", controls = "wasd")
 player.jump_height = 0.3
 player.SPEED = 2
-
+# player.position = (-527, 255, 159)
 player.sword = sword
 player.bow = bow
 player.arrow = arrow
+
+sword.player = player
+sword.bow = bow
+sword.arrow = arrow
+
+bow.player = player
+bow.sword = sword
+bow.arrow = arrow
 
 health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
@@ -61,12 +69,8 @@ def spawn_orc_1():
 # spawn_orc_1()
 
 # player.disable()
-# EditorCamera()
+# EditorCamera() 
 # sword.disable()
-
-bow.parent = camera
-bow.position = (0.5, 0, 1)
-bow.enabled = False
 
 trail_renderer = TrailRenderer(target = sword)
 trail_renderer.disable()
@@ -75,17 +79,17 @@ def destroy_arrow():
     destroy(player.arrow)
 
 def input(key):
-    if bow.enabled and key == "right mouse down":
+    if bow.enabled and key == "right mouse down" and bow.equipped == True:
         player.arrow = duplicate(arrow, world_parent = bow, position = Vec3(-0.2, 0, 0), rotation = Vec3(0, 0, 0))
         player.arrow.animate("position", player.arrow.position + Vec3(0, 0, -1.2), duration = 0.2, curve = curve.linear)
         player.SPEED = 1
 
-    elif bow.enabled and key == "right mouse up":
+    elif bow.enabled and key == "right mouse up" and bow.equipped == True:
         player.SPEED = 2
 
         if mouse.hovered_entity and mouse.hovered_entity.visible:
             player.arrow.world_parent = scene
-            player.arrow.animate("position", Vec3(* mouse.world_point), mouse.collision.distance / 500, curve = curve.linear, interrupt = "kill")
+            player.arrow.animate("position", Vec3(* mouse.world_point), mouse.collision.distance / 10000, curve = curve.linear, interrupt = "kill")
         
         else:
             player.arrow.world_parent = scene
@@ -100,7 +104,7 @@ def input(key):
         
         destroy(player.arrow, delay = 1)
 
-    if sword.enabled == True and sword.parent == camera:
+    if sword.enabled == True and sword.parent == camera and sword.equipped == True:
         if key == "left mouse down" and key != "right mouse down" and key != "right mouse up":
             sword.animate("rotation", sword.rotation + Vec3(0, 0, -90), duration = 0.05, curve = curve.linear)
 
@@ -136,25 +140,25 @@ def update():
 
     health_text.text = str(player.health)
 
-    if held_keys["1"]:
+    if held_keys["1"] and sword.equipped == True and bow.equipped == True:
         bow.disable()
         arrow.disable()
         player.arrow.disable()
         sword.enabled = True
 
-    if held_keys["2"]:
+    if held_keys["2"] and sword.equipped == True and bow.equipped == True:
         bow.enable()
         arrow.enable()
         sword.enabled = False
 
     s.rotation_y += 1 * time.dt
 
-    if sword.enabled == True:
+    if sword.enabled == True and sword.equipped == True:
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y,mouse.x, 0))
         sword.position = (movement.y * 2, movement.x * 2, movement.z * 2) + (2, 0, 2.5)
 
-    if bow.enabled == True:
+    if bow.enabled == True and bow.equipped == True:
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y, mouse.x, 0))
         bow.position = (movement.y * 0.5, movement.x * 0.5, movement.z * 0.5) + (0.5, 0, 1)
