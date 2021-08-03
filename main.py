@@ -1,10 +1,13 @@
 from ursina import *
-from ursina import curve
 
 from player import Player
+
 from weapons.sword import Sword
 from weapons.bow import Bow
 from weapons.arrow import Arrow 
+from weapons.shield import Shield
+from weapons.grappling_hook import *
+
 from orc import Orc
 
 from trail_renderer import TrailRenderer
@@ -14,7 +17,7 @@ from village import Village
 
 app = Ursina()
 
-# scene.fog_density = 0.001
+scene.fog_density = 0.001
 
 # Map
 terrain = Entity(model = Terrain("heightmap", skip = 8), texture = "colour", scale = 2000, scale_y = 1000, collider = "mesh", tag = "terrain")
@@ -38,10 +41,10 @@ light.color = color.white
 AmbientLight(color = color.rgba(100, 100, 100, 0.1))
 
 sword = Sword()
-
 bow = Bow()
-
 arrow = Arrow()
+shield = Shield()
+grappling_hook = GrapplingHook()
 
 player = Player("cube", (-1000, 100, 0), "box", controls = "wasd")
 player.jump_height = 0.3
@@ -54,10 +57,37 @@ player.arrow = arrow
 sword.player = player
 sword.bow = bow
 sword.arrow = arrow
+sword.shield = shield
+sword.grappling_hook = grappling_hook
 
 bow.player = player
 bow.sword = sword
 bow.arrow = arrow
+bow.shield = shield
+bow.grappling_hook = grappling_hook
+
+shield.player = player
+shield.bow = bow
+shield.sword = sword
+shield.arrow = arrow
+shield.grappling_hook = grappling_hook
+
+grappling_hook.player = player
+grappling_hook.sword = sword
+grappling_hook.arrow = arrow
+grappling_hook.shield = shield
+grappling_hook.bow = bow
+
+grapple_1 = GrappleBlock((-963, 52, 60))
+grapple_2 = GrappleBlock((-973, 72, 70))
+grapple_3 = GrappleBlock((-963, 92, 60))
+
+grapple_1.grappling_hook = grappling_hook
+grapple_1.player = player
+grapple_2.grappling_hook = grappling_hook
+grapple_2.player = player
+grapple_3.grappling_hook = grappling_hook
+grapple_3.player = player
 
 health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
@@ -78,54 +108,6 @@ trail_renderer.disable()
 def destroy_arrow():
     destroy(player.arrow)
 
-def input(key):
-    if bow.enabled and key == "right mouse down" and bow.equipped == True:
-        player.arrow = duplicate(arrow, world_parent = bow, position = Vec3(-0.2, 0, 0), rotation = Vec3(0, 0, 0))
-        player.arrow.animate("position", player.arrow.position + Vec3(0, 0, -1.2), duration = 0.2, curve = curve.linear)
-        player.SPEED = 1
-
-    elif bow.enabled and key == "right mouse up" and bow.equipped == True:
-        player.SPEED = 2
-
-        if mouse.hovered_entity and mouse.hovered_entity.visible:
-            player.arrow.world_parent = scene
-            player.arrow.animate("position", Vec3(* mouse.world_point), mouse.collision.distance / 10000, curve = curve.linear, interrupt = "kill")
-        
-        else:
-            player.arrow.world_parent = scene
-            player.arrow.animate("position", player.arrow.world_position + (player.arrow.forward * 100), 0.5, curve = curve.linear, interrupt = "kill")
-            destroy(player.arrow, delay = 1)
-
-        ray = raycast(player.arrow.position, player.arrow.forward, distance = 100, ignore = [player.arrow, player, ])
-
-        if ray.entity and ray.entity.tag == "orc":
-            ray.entity.health -= 2
-            destroy(player.arrow, delay = 0.07)
-        
-        destroy(player.arrow, delay = 1)
-
-    if sword.enabled == True and sword.parent == camera and sword.equipped == True:
-        if key == "left mouse down" and key != "right mouse down" and key != "right mouse up":
-            sword.animate("rotation", sword.rotation + Vec3(0, 0, -90), duration = 0.05, curve = curve.linear)
-
-            ray = raycast(player.position, player.forward, distance = 20, ignore = [sword, player, ])
-
-            if ray.entity and ray.entity.tag == "orc":
-                ray.entity.health -= 1
-
-        elif key == "left mouse up" and key != "right mouse down" and key != "right mouse up":
-            sword.animate("rotation", sword.rotation - (0, 0, sword.rotation_z), duration = 0.05, curve = curve.linear)
-
-        if key == "right mouse down" and key != "left mouse down" and key != "left mouse up" :
-            sword.animate("rotation", sword.rotation + Vec3(-65, 0, 0), duration = 0.05, curve = curve.linear)
-            player.SPEED = 0.5
-            player.blocking = True
-
-        elif key == "right mouse up" and key != "left mouse down" and key != "left mouse up":
-            sword.animate("rotation", sword.rotation + Vec3(-sword.rotation_x, 0, 0), duration = 0.05, curve = curve.linear)
-            player.SPEED = 2
-            player.blocking = False
-
 spring = Spring()
 
 def update():
@@ -140,15 +122,23 @@ def update():
 
     health_text.text = str(player.health)
 
-    if held_keys["1"] and sword.equipped == True and bow.equipped == True:
+    if held_keys["1"] and sword.equipped == True and bow.equipped == True and grappling_hook.equipped == True:
         bow.disable()
         arrow.disable()
         player.arrow.disable()
+        grappling_hook.enabled = False
         sword.enabled = True
 
-    if held_keys["2"] and sword.equipped == True and bow.equipped == True:
+    if held_keys["2"] and sword.equipped == True and bow.equipped == True and grappling_hook.equipped == True:
         bow.enable()
         arrow.enable()
+        grappling_hook.enabled = False
+        sword.enabled = False
+
+    if held_keys["3"] and sword.equipped == True and bow.equipped == True and grappling_hook.equipped == True:
+        bow.disable()
+        arrow.disable()
+        grappling_hook.enabled = True
         sword.enabled = False
 
     s.rotation_y += 1 * time.dt
@@ -156,13 +146,23 @@ def update():
     if sword.enabled == True and sword.equipped == True:
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y,mouse.x, 0))
-        sword.position = (movement.y * 2, movement.x * 2, movement.z * 2) + (2, 0, 2.5)
+        sword.position = (movement.y * 2, movement.x * 2, movement.z * 2) + (1.5, -2.2, 1.8)
 
     if bow.enabled == True and bow.equipped == True:
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y, mouse.x, 0))
         bow.position = (movement.y * 0.5, movement.x * 0.5, movement.z * 0.5) + (0.5, 0, 1)
 
-    print(player.position)
+    if shield.enabled == True and shield.equipped == True:
+        movement = spring.update(time.dt)
+        spring.shove(Vec3(mouse.y, mouse.x, 0))
+        shield.position = (movement.y * 0.2, movement.x * 0.2, movement.z * 0.2) + (-1, -1, 1)
+
+    if grappling_hook.enabled == True and grappling_hook.equipped == True:
+        movement = spring.update(time.dt)
+        spring.shove(Vec3(mouse.y, mouse.x, 0))
+        grappling_hook.position = (movement.y * 2, movement.x * 2, movement.z * 2) + (1, -1, 2)
+
+    print(round(player.position))
 
 app.run()
