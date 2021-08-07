@@ -4,7 +4,7 @@ import math
 sign = lambda x: -1 if x < 0 else (1 if x > 0 else 0)
 
 class Player(Entity):
-    def __init__(self, model, position, collider, scale = (1.3, 1, 1.3), SPEED = 3, velocity = (0, 0, 0), MAXJUMP = 1, gravity = 1, controls = "wasd", **kwargs):
+    def __init__(self, model, position, collider, scale = (1.3, 1, 1.3), SPEED = 2, jump_height = 0.3, velocity = (0, 0, 0), MAXJUMP = 1, gravity = 1, controls = "wasd", **kwargs):
         super().__init__(
             model = "cube", 
             position = position,
@@ -25,10 +25,10 @@ class Player(Entity):
         self.MAXJUMP = MAXJUMP
         self.jump_count = 0
         self.gravity = gravity
-        self.jump_height = 0.3
+        self.jump_height = jump_height
         self.slope = 40
         self.controls = controls
-        self.sensibility = 70
+        self.sensitivity = 80
         self.health = 5
         self.kills = 0
         self.sword = None
@@ -61,7 +61,6 @@ class Player(Entity):
         yRay = boxcast(origin = self.world_position, direction=direction,
                         distance=self.scale_y/2+abs(y_movement), ignore=[self, ])
         if yRay.hit:
-            move = False
             self.jump_count = 0
             self.velocity_y = 0
         else :
@@ -117,11 +116,11 @@ class Player(Entity):
                         self.y += HeightRay.distance
 
 
-        camera.rotation_x -= mouse.velocity[1] * self.sensibility
-        self.rotation_y += mouse.velocity[0] * self.sensibility
+        camera.rotation_x -= mouse.velocity[1] * self.sensitivity * 30 * time.dt
+        self.rotation_y += mouse.velocity[0] * self.sensitivity * 30 * time.dt
         camera.rotation_x = min(max(-80, camera.rotation_x), 80)
 
     def input(self, key):
-        if key == 'space':
+        if key == "space":
             if self.jump_count < self.MAXJUMP:
                 self.jump()
