@@ -1,10 +1,15 @@
 from ursina import *
 import math
 
+from weapons.sword import Sword
+from weapons.shield import Shield
+from weapons.bow import Bow
+from weapons.arrow import Arrow
+
 sign = lambda x: -1 if x < 0 else (1 if x > 0 else 0)
 
 class Player(Entity):
-    def __init__(self, model, position, collider, scale = (1.3, 1, 1.3), SPEED = 2, jump_height = 0.3, velocity = (0, 0, 0), MAXJUMP = 1, gravity = 1, controls = "wasd", **kwargs):
+    def __init__(self, model, position, collider, terrain, scale = (1.3, 1, 1.3), SPEED = 2, jump_height = 0.3, velocity = (0, 0, 0), MAXJUMP = 1, gravity = 1, controls = "wasd", **kwargs):
         super().__init__(
             model = "cube", 
             position = position,
@@ -37,6 +42,28 @@ class Player(Entity):
         self.blocking = False
         self.crosshair = Entity(model = "quad", color = color.black, parent = camera, position = (0, 0, 1), scale = (0.01, 0.01, 0.01))
 
+        self.terrain = terrain
+
+        self.sword = Sword(terrain = self.terrain)
+        self.bow = Bow(terrain = self.terrain)
+        self.arrow = Arrow()
+        self.shield = Shield(terrain = self.terrain)
+
+        self.sword.player = self
+        self.sword.bow = self.bow
+        self.sword.arrow = self.arrow
+        self.sword.shield = self.shield
+
+        self.bow.player = self
+        self.bow.sword = self.sword
+        self.bow.arrow = self.arrow
+        self.bow.shield = self.shield
+        
+        self.shield.player = self
+        self.shield.bow = self.bow
+        self.shield.sword = self.sword
+        self.shield.arrow = self.arrow
+
         for key, value in kwargs.items():
             try:
                 setattr(self, key, value)
@@ -55,11 +82,31 @@ class Player(Entity):
             self.bow.disable()
             self.arrow.disable()
 
+        self.direction = Vec3(self.forward * (held_keys["w"] - held_keys["s"]) + self.right * (held_keys["d"] - held_keys["a"])).normalized()
+
+        if self.sword.equipped == True and self.shield.equipped == False:
+            self.sword.always_on_top = True
+            self.shield.always_on_top = False
+        if self.shield.equipped == True and self.sword.equipped == False:
+            self.shield.always_on_top = True
+            self.sword.always_on_top = False
+        if self.shield.equipped == True and self.sword.equipped == True:
+            self.sword.always_on_top = True
+            self.shield.always_on_top = True
+        if self.bow.equipped == True:
+            self.bow.always_on_top = True
+            self.shield.always_on_top = False
+            self.sword.always_on_top = False
+        if self.bow.equipped == False and self.shield.equipped == False and self.sword.equipped == False:
+            self.bow.always_on_top = False
+            self.sword.always_on_top = False
+            self.shield.always_on_top = False
+    
         y_movement = self.velocity_y * time.dt
 
         direction = (0, sign(y_movement), 0)
-        yRay = boxcast(origin = self.world_position, direction=direction,
-                        distance=self.scale_y/2+abs(y_movement), ignore=[self, ])
+        yRay = terraincast(origin = self.world_position, terrain = self.terrain, direction=direction, distance = self.scale_y + abs(y_movement))
+        
         if yRay.hit:
             self.jump_count = 0
             self.velocity_y = 0
@@ -67,54 +114,45 @@ class Player(Entity):
             self.y += y_movement
             self.velocity_y -= self.gravity * time.dt * 25
 
-        x_movement = (self.forward[0]*held_keys[self.controls[0]] +
-                      self.left[0]*held_keys[self.controls[1]] +
-                      self.back[0]*held_keys[self.controls[2]] +
-                      self.right[0]*held_keys[self.controls[3]]) * time.dt*6 * self.SPEED
+        x_movement = (self.forward[0] * held_keys[self.controls[0]] + 
+            self.left[0] * held_keys[self.controls[1]] + 
+            self.back[0] * held_keys[self.controls[2]] + 
+            self.right[0] * held_keys[self.controls[3]]) * time.dt * 6 * self.SPEED
 
         z_movement = (self.forward[2]*held_keys[self.controls[0]] +
-                      self.left[2]*held_keys[self.controls[1]] +
-                      self.back[2]*held_keys[self.controls[2]] +
-                      self.right[2]*held_keys[self.controls[3]]) * time.dt*6 * self.SPEED
+            self.left[2] * held_keys[self.controls[1]] +
+            self.back[2] * held_keys[self.controls[2]] +
+            self.right[2] * held_keys[self.controls[3]]) * time.dt * 6 * self.SPEED
 
         if x_movement != 0:
             direction = (sign(x_movement), 0, 0)
-            xRay = boxcast(origin=self.world_position, direction=direction,
-                           distance=self.scale_x/2+abs(x_movement), ignore=[self, ],thickness = (1,1))
+            xRay = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_x + abs(x_movement))
 
             if not xRay.hit:
                 self.x += x_movement
             else:
-                TopXRay = raycast(origin=self.world_position-(0, self.scale_y/2-.1, 0),
-                                  direction=direction,distance = self.scale_x/2+math.tan(math.radians(self.slope))*.1, 
-                                  ignore=[self, ])
+                TopXRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_x + math.tan(math.radians(self.slope)) / 9999999999)
 
                 if not TopXRay.hit:
                     self.x += x_movement
-                    HeightRay = raycast(origin=self.world_position+(sign(x_movement)*self.scale_x/2, -self.scale_y/2, 0),
-                                        direction=(0,1,0), ignore=[self, ])
-                    if HeightRay.hit :
-                        self.y += HeightRay.distance
+                    HeightRay = terraincast(origin = self.world_position + (sign(x_movement) * self.scale_x / 2, -self.scale_y / 2, 0), terrain = self.terrain, direction = (0, 1, 0))
+                    if HeightRay.hit:
+                        self.y += HeightRay.distance / 5
 
         if z_movement != 0:
             direction = (0, 0, sign(z_movement))
-            zRay = boxcast(origin=self.world_position, direction=direction,
-                           distance=self.scale_z/2+abs(z_movement), ignore=[self, ],thickness = (1,1))
+            zRay = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_z + abs(z_movement))
 
             if not zRay.hit:
                 self.z += z_movement
             else:
-                TopZRay = raycast(origin=self.world_position-(0, self.scale_y/2-.1, 0),
-                                  direction=direction,distance = self.scale_z/2+math.tan(math.radians(self.slope))*.1, 
-                                  ignore=[self, ])
+                TopZRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_z + math.tan(math.radians(self.slope)) / 9999999999)
 
                 if not TopZRay.hit:
                     self.z += z_movement
-                    HeightRay = raycast(origin=self.world_position+(0, -self.scale_y/2, sign(z_movement)*self.scale_z/2),
-                                     direction=(0,1,0), ignore=[self, ])
-                    if HeightRay.hit :
-                        self.y += HeightRay.distance
-
+                    HeightRay = terraincast(origin = self.world_position + (0, -self.scale_y / 2, sign(z_movement) * self.scale_z / 2), terrain = self.terrain, direction = (0, 1, 0))
+                    if HeightRay.hit:
+                        self.y += HeightRay.distance / 5
 
         camera.rotation_x -= mouse.velocity[1] * self.sensitivity * 30 * time.dt
         self.rotation_y += mouse.velocity[0] * self.sensitivity * 30 * time.dt

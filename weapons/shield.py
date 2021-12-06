@@ -1,7 +1,7 @@
 from ursina import *
 
 class Shield(FrameAnimation3d):
-    def __init__(self, rotation = (0, 90, 90), position = (-522, 18.5, 191)):
+    def __init__(self, rotation = (0, 90, 90), position = (-522, 18.5, 191), terrain = None):
         super().__init__(
             name = "shield_",
             autoplay = False,
@@ -27,6 +27,8 @@ class Shield(FrameAnimation3d):
         self.blocking = False
         self.gravity = False
 
+        self.terrain = terrain
+
         self.pause()
 
     def update(self):
@@ -36,6 +38,8 @@ class Shield(FrameAnimation3d):
             self.position = (-1, -1, 1)
             self.rotation = (0, 90, 0)
             self.gravity = False
+            self.bow.equipped = False
+            self.bow.parent = scene
             
             if self.bow.equipped == True:
                 self.bow.disable()
@@ -48,15 +52,10 @@ class Shield(FrameAnimation3d):
             self.position = self.player.position
             self.y = self.player.y + 1
 
-        ray = raycast(self.position, self.down, distance = 1.5, ignore = [self, self.player, ])
+        ray = terraincast(origin = self.position, direction = self.down, terrain = self.terrain, distance = 1.5)
 
         if self.equipped == False and self.gravity == True and not ray.hit:
             self.y -= 1 * 9.81 * time.dt 
-
-        if self.equipped == True:
-            self.always_on_top = True
-        else:
-            self.always_on_top = False
 
     def input(self, key):
         if self.enabled == True and self.equipped == True:

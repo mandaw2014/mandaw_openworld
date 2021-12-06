@@ -2,7 +2,7 @@ from ursina import *
 from ursina import curve
 
 class Bow(Entity):
-    def __init__(self, model = "bow.obj", loaded = False):
+    def __init__(self, model = "bow.obj", loaded = False, terrain = None):
         super().__init__(
             model = model,
             texture = "bow",
@@ -21,6 +21,8 @@ class Bow(Entity):
         self.grappling_hook = None
         self.gravity = False
 
+        self.terrain = terrain
+
     def update(self):
         if held_keys["e"] and distance(self.player, self) <= 10:
             self.equipped = True
@@ -28,6 +30,8 @@ class Bow(Entity):
             self.parent = camera
             self.position = (0.5, 0, 1)
             self.rotation = (0, 0, 0)
+            self.shield.equipped = False
+            self.shield.parent = scene
 
             if self.sword.equipped == True:
                 self.sword.disable()
@@ -42,15 +46,10 @@ class Bow(Entity):
             self.position = self.player.position
             self.y = self.player.y + 1
 
-        ray = raycast(self.position, self.down, distance = 1.5, ignore = [self, self.player, ])
+        ray = terraincast(origin = self.position, direction = self.down, terrain = self.terrain, distance = 1.5)
 
         if self.equipped == False and self.gravity == True and not ray.hit:
             self.y -= 1 * 9.81 * time.dt 
-
-        if self.equipped == True:
-            self.always_on_top = True
-        else:
-            self.always_on_top = False
 
     def input(self, key):
         if self.enabled and key == "right mouse down" and self.equipped == True:
@@ -70,10 +69,10 @@ class Bow(Entity):
                 self.player.arrow.animate("position", self.player.arrow.world_position + (self.player.arrow.forward * 100), 0.5, curve = curve.linear, interrupt = "kill")
                 destroy(self.player.arrow, delay = 1)
 
-            ray = raycast(self.player.arrow.position, self.player.arrow.forward, distance = 100, ignore = [self.player.arrow, self.player, ])
+            ray = raycast(origin = self.player.arrow.position, direction = self.player.arrow.forward, distance = 100, ignore = [self.player, self, self.arrow, ])
 
-            if ray.entity and ray.entity.tag == "orc":
-                ray.entity.health -= 2
+            if ray.entity and ray.entity.tag == "enemy":
+                ray.entity.hit()
                 destroy(self.player.arrow, delay = 0.07)
             
             destroy(self.player.arrow, delay = 1)
