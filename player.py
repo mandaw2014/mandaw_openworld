@@ -9,7 +9,7 @@ from weapons.arrow import Arrow
 sign = lambda x: -1 if x < 0 else (1 if x > 0 else 0)
 
 class Player(Entity):
-    def __init__(self, model, position, collider, terrain, scale = (1.3, 1, 1.3), SPEED = 2, jump_height = 0.3, velocity = (0, 0, 0), MAXJUMP = 1, gravity = 1, controls = "wasd", **kwargs):
+    def __init__(self, position, terrain, speed = 2, jump_height = 0.3, controls = "wasd"):
         super().__init__(
             model = "cube", 
             position = position,
@@ -25,13 +25,11 @@ class Player(Entity):
         camera.position = (0, 2, 0)
         camera.rotation = (0, 0, 0)
         camera.fov = 100
-        self.velocity_x, self.velocity_y, self.velocity_z = velocity
-        self.SPEED = SPEED
-        self.MAXJUMP = MAXJUMP
+        self.velocity_x, self.velocity_y, self.velocity_z = (0, 0, 0)
+        self.speed = speed
         self.jump_count = 0
-        self.gravity = gravity
         self.jump_height = jump_height
-        self.slope = 40
+        self.slope = 100000000
         self.controls = controls
         self.sensitivity = 80
         self.health = 5
@@ -63,12 +61,6 @@ class Player(Entity):
         self.shield.bow = self.bow
         self.shield.sword = self.sword
         self.shield.arrow = self.arrow
-
-        for key, value in kwargs.items():
-            try:
-                setattr(self, key, value)
-            except:
-                print(key, value)
 
     def jump(self):
         self.velocity_y = self.jump_height * 40
@@ -110,19 +102,19 @@ class Player(Entity):
         if yRay.hit:
             self.jump_count = 0
             self.velocity_y = 0
-        else :
+        else:
             self.y += y_movement
-            self.velocity_y -= self.gravity * time.dt * 25
+            self.velocity_y -= 1 * time.dt * 25
 
         x_movement = (self.forward[0] * held_keys[self.controls[0]] + 
             self.left[0] * held_keys[self.controls[1]] + 
             self.back[0] * held_keys[self.controls[2]] + 
-            self.right[0] * held_keys[self.controls[3]]) * time.dt * 6 * self.SPEED
+            self.right[0] * held_keys[self.controls[3]]) * time.dt * 6 * self.speed
 
         z_movement = (self.forward[2]*held_keys[self.controls[0]] +
             self.left[2] * held_keys[self.controls[1]] +
             self.back[2] * held_keys[self.controls[2]] +
-            self.right[2] * held_keys[self.controls[3]]) * time.dt * 6 * self.SPEED
+            self.right[2] * held_keys[self.controls[3]]) * time.dt * 6 * self.speed
 
         if x_movement != 0:
             direction = (sign(x_movement), 0, 0)
@@ -131,7 +123,7 @@ class Player(Entity):
             if not xRay.hit:
                 self.x += x_movement
             else:
-                TopXRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_x + math.tan(math.radians(self.slope)) / 9999999999)
+                TopXRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 - 0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_x + math.tan(math.radians(self.slope)))
 
                 if not TopXRay.hit:
                     self.x += x_movement
@@ -146,7 +138,7 @@ class Player(Entity):
             if not zRay.hit:
                 self.z += z_movement
             else:
-                TopZRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_z + math.tan(math.radians(self.slope)) / 9999999999)
+                TopZRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_z + math.tan(math.radians(self.slope)))
 
                 if not TopZRay.hit:
                     self.z += z_movement
@@ -160,5 +152,5 @@ class Player(Entity):
 
     def input(self, key):
         if key == "space":
-            if self.jump_count < self.MAXJUMP:
+            if self.jump_count < 1:
                 self.jump()

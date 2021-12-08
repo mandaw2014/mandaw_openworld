@@ -4,7 +4,6 @@ from player import Player
 
 from enemy import Enemy
 
-from trail_renderer import TrailRenderer
 from springs import Spring
 from map import Map
 
@@ -14,12 +13,12 @@ scene.fog_density = 0.001
 
 map = Map()
 
-s = Sky()
+Sky(texture = "sky")
 
 PointLight(parent = camera, color = color.white, position = (0, 10, -1.5))
 AmbientLight(color = color.rgba(100, 100, 100, 0.1))
 
-player = Player("cube", (-1000, 100, 0), "box", map.terrain, controls = "wasd")
+player = Player((-1000, 100, 0), map.terrain)
 player.jump_height = 0.3
 player.SPEED = 2
 player.position = (-527, 100, 159)
@@ -30,13 +29,10 @@ player.shield.equipped = False
 
 health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
-e = Enemy((player.x + 10, player.y, player.z + 10), map.terrain)
-e.follow = player
+enemy = Enemy((player.x + 20, 50, player.z + 20), map.terrain)
+enemy.follow = player
 
 hit_entity = Entity(model = "sphere", scale = 0.1)
-
-trail_renderer = TrailRenderer(target = player.sword)
-trail_renderer.disable()
 
 spring = Spring()
 
@@ -67,8 +63,6 @@ def update():
         player.bow.enable()
         player.arrow.enable()
         player.sword.disable()
-        
-    s.rotation_y += 1 * time.dt
 
     if player.sword.enabled == True and player.sword.equipped == True:
         movement = spring.update(time.dt)
