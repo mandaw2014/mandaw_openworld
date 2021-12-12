@@ -25,6 +25,8 @@ class Sword(FrameAnimation3d):
         self.grappling_hook = None
         self.gravity = False
 
+        self.always_on_top = False
+
         self.ready = True
 
         self.terrain = terrain

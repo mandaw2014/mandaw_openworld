@@ -83,16 +83,12 @@ class Player(Entity):
             self.shield.always_on_top = True
             self.sword.always_on_top = False
         if self.shield.equipped == True and self.sword.equipped == True:
-            self.sword.always_on_top = True
+            self.sword.always_on_top = False
             self.shield.always_on_top = True
         if self.bow.equipped == True:
             self.bow.always_on_top = True
             self.shield.always_on_top = False
             self.sword.always_on_top = False
-        if self.bow.equipped == False and self.shield.equipped == False and self.sword.equipped == False:
-            self.bow.always_on_top = False
-            self.sword.always_on_top = False
-            self.shield.always_on_top = False
     
         y_movement = self.velocity_y * time.dt
 

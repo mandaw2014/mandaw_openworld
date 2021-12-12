@@ -24,6 +24,8 @@ class Shield(FrameAnimation3d):
         self.grappling_hook = None
         self.bow = None
 
+        self.always_on_top = False
+
         self.blocking = False
         self.gravity = False
 

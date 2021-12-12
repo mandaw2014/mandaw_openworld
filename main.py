@@ -29,7 +29,7 @@ player.shield.equipped = False
 
 health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
-enemy = Enemy((player.x + 20, 50, player.z + 20), map.terrain)
+enemy = Enemy((player.x + 50, 50, player.z + 50), map.terrain)
 enemy.follow = player
 
 hit_entity = Entity(model = "sphere", scale = 0.1)
@@ -72,7 +72,10 @@ def update():
     if player.bow.enabled == True and player.bow.equipped == True:
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y, mouse.x, 0))
-        player.bow.position = (movement.y * 0.5, movement.x * 0.5, movement.z * 0.5) + (0.5, 0, 1)
+        if player.bow.loaded == False:
+            player.bow.position = (movement.y * 0.5, movement.x * 0.5, movement.z * 0.5) + (0.5, 0, 1)
+        elif player.bow.loaded == True:
+            player.bow.position = (movement.y * 0.1, movement.x * 0.1, movement.z * 0.1) + (0.5, 0, 1)
 
     if player.shield.enabled == True and player.shield.equipped == True:
         movement = spring.update(time.dt)

@@ -2,7 +2,7 @@ from ursina import *
 from ursina import curve
 
 class Bow(Entity):
-    def __init__(self, model = "bow.obj", loaded = False, terrain = None):
+    def __init__(self, model = "bow.obj", terrain = None):
         super().__init__(
             model = model,
             texture = "bow",
@@ -12,7 +12,7 @@ class Bow(Entity):
             rotation = (0, 90, 90)
         )
 
-        self.loaded = loaded
+        self.loaded = False
         self.equipped = False
         self.player = None
         self.sword = None
@@ -20,6 +20,8 @@ class Bow(Entity):
         self.shield = None
         self.grappling_hook = None
         self.gravity = False
+
+        self.always_on_top = False
 
         self.terrain = terrain
 
@@ -51,14 +53,18 @@ class Bow(Entity):
         if self.equipped == False and self.gravity == True and not ray.hit:
             self.y -= 1 * 9.81 * time.dt 
 
+        self.arrow.always_on_top = False
+
     def input(self, key):
         if self.enabled and key == "right mouse down" and self.equipped == True:
-            self.player.arrow = duplicate(self.arrow, world_parent = self, position = Vec3(-0.2, 0, 0), rotation = Vec3(0, 0, 0))
+            self.player.arrow = duplicate(self.arrow, world_parent = self, position = Vec3(-0.2, 0, -0.5), rotation = Vec3(0, 0, 0))
             self.player.arrow.animate("position", self.player.arrow.position + Vec3(0, 0, -1.2), duration = 0.2, curve = curve.linear)
             self.player.SPEED = 1
+            self.loaded = True
 
         elif self.enabled and key == "right mouse up" and self.equipped == True:
             self.player.SPEED = 2
+            self.loaded = False
 
             if mouse.hovered_entity and mouse.hovered_entity.visible:
                 self.player.arrow.world_parent = scene
