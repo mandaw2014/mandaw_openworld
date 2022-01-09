@@ -1,7 +1,7 @@
 from ursina import *
 
 class Sword(FrameAnimation3d):
-    def __init__(self, rotation = (90, 90, 0), parent = scene, terrain = None):
+    def __init__(self, rotation = (0, 0, 0), parent = scene, terrain = None):
         super().__init__(
             "sword_",
             frame_times = 140,

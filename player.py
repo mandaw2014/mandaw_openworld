@@ -9,7 +9,7 @@ from weapons.arrow import Arrow
 sign = lambda x: -1 if x < 0 else (1 if x > 0 else 0)
 
 class Player(Entity):
-    def __init__(self, position, terrain, speed = 2, jump_height = 0.3, controls = "wasd"):
+    def __init__(self, position, map, speed = 2, jump_height = 0.3, controls = "wasd"):
         super().__init__(
             model = "cube", 
             position = position,
@@ -29,7 +29,7 @@ class Player(Entity):
         self.speed = speed
         self.jump_count = 0
         self.jump_height = jump_height
-        self.slope = 100000000
+        self.slope = 10000000000000000
         self.controls = controls
         self.sensitivity = 80
         self.health = 5
@@ -40,7 +40,9 @@ class Player(Entity):
         self.blocking = False
         self.crosshair = Entity(model = "quad", color = color.black, parent = camera, position = (0, 0, 1), scale = (0.01, 0.01, 0.01))
 
-        self.terrain = terrain
+        self.map = map
+
+        self.terrain = self.map.terrain
 
         self.sword = Sword(terrain = self.terrain)
         self.bow = Bow(terrain = self.terrain)
@@ -93,54 +95,107 @@ class Player(Entity):
         y_movement = self.velocity_y * time.dt
 
         direction = (0, sign(y_movement), 0)
-        yRay = terraincast(origin = self.world_position, terrain = self.terrain, direction=direction, distance = self.scale_y + abs(y_movement))
-        
-        if yRay.hit:
-            self.jump_count = 0
-            self.velocity_y = 0
-        else:
-            self.y += y_movement
-            self.velocity_y -= 1 * time.dt * 25
 
         x_movement = (self.forward[0] * held_keys[self.controls[0]] + 
             self.left[0] * held_keys[self.controls[1]] + 
             self.back[0] * held_keys[self.controls[2]] + 
             self.right[0] * held_keys[self.controls[3]]) * time.dt * 6 * self.speed
 
-        z_movement = (self.forward[2]*held_keys[self.controls[0]] +
+        z_movement = (self.forward[2] * held_keys[self.controls[0]] +
             self.left[2] * held_keys[self.controls[1]] +
             self.back[2] * held_keys[self.controls[2]] +
             self.right[2] * held_keys[self.controls[3]]) * time.dt * 6 * self.speed
 
-        if x_movement != 0:
-            direction = (sign(x_movement), 0, 0)
-            xRay = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_x + abs(x_movement))
+        hill_ray = raycast(origin = self.position, direction = self.down, distance = 2, ignore = [self, ])
 
-            if not xRay.hit:
-                self.x += x_movement
+        if hill_ray.entity and hill_ray.entity.tag == "sornhill" or hill_ray.entity and hill_ray.entity.tag == "sorntop":
+            yRay = boxcast(origin = self.world_position, direction=direction,
+                        distance=self.scale_y/2+abs(y_movement), ignore=[self, ])
+            
+            if yRay.hit:
+                self.jump_count = 0
+                self.velocity_y = 0
             else:
-                TopXRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 - 0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_x + math.tan(math.radians(self.slope)))
+                self.y += y_movement
+                self.velocity_y -= 1 * time.dt * 25
 
-                if not TopXRay.hit:
+            if x_movement != 0:
+                direction = (sign(x_movement), 0, 0)
+                x_ray = boxcast(origin=self.world_position, direction=direction,
+                            distance=self.scale_x/2+abs(x_movement), ignore=[self, ],thickness = (1,1))
+
+                if not x_ray.hit:
                     self.x += x_movement
-                    HeightRay = terraincast(origin = self.world_position + (sign(x_movement) * self.scale_x / 2, -self.scale_y / 2, 0), terrain = self.terrain, direction = (0, 1, 0))
-                    if HeightRay.hit:
-                        self.y += HeightRay.distance / 5
+                else:
+                    top_x_ray = raycast(origin=self.world_position-(0, self.scale_y/2-.1, 0),
+                                    direction=direction,distance = self.scale_x/2+math.tan(math.radians(self.slope))*.1, 
+                                    ignore=[self, ])
 
-        if z_movement != 0:
-            direction = (0, 0, sign(z_movement))
-            zRay = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_z + abs(z_movement))
+                    if not top_x_ray.hit:
+                        self.x += x_movement
+                        height_ray = raycast(origin=self.world_position+(sign(x_movement)*self.scale_x/2, -self.scale_y/2, 0),
+                                            direction=(0,1,0), ignore=[self, ])
+                        if height_ray.hit :
+                            self.y += height_ray.distance
 
-            if not zRay.hit:
-                self.z += z_movement
-            else:
-                TopZRay = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_z + math.tan(math.radians(self.slope)))
+            if z_movement != 0:
+                direction = (0, 0, sign(z_movement))
+                z_ray = boxcast(origin=self.world_position, direction=direction,
+                            distance=self.scale_z/2+abs(z_movement), ignore=[self, ],thickness = (1,1))
 
-                if not TopZRay.hit:
+                if not z_ray.hit:
                     self.z += z_movement
-                    HeightRay = terraincast(origin = self.world_position + (0, -self.scale_y / 2, sign(z_movement) * self.scale_z / 2), terrain = self.terrain, direction = (0, 1, 0))
-                    if HeightRay.hit:
-                        self.y += HeightRay.distance / 5
+                else:
+                    top_z_ray = raycast(origin=self.world_position-(0, self.scale_y/2-.1, 0),
+                                    direction=direction,distance = self.scale_z/2+math.tan(math.radians(self.slope))*.1, 
+                                    ignore=[self, ])
+
+                    if not top_z_ray.hit:
+                        self.z += z_movement
+                        height_ray = raycast(origin=self.world_position+(0, -self.scale_y/2, sign(z_movement)*self.scale_z/2),
+                                        direction=(0,1,0), ignore=[self, ])
+                        if height_ray.hit :
+                            self.y += height_ray.distance
+
+        else:
+            yRay = terraincast(origin = self.world_position, terrain = self.terrain, direction=direction, distance = self.scale_y + abs(y_movement))
+        
+            if yRay.hit:
+                self.jump_count = 0
+                self.velocity_y = 0
+            else:
+                self.y += y_movement
+                self.velocity_y -= 1 * time.dt * 25
+
+            if x_movement != 0:
+                direction = (sign(x_movement), 0, 0)
+                x_ray = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_x + abs(x_movement))
+
+                if not x_ray.hit:
+                    self.x += x_movement
+                else:
+                    top_x_ray = terraincast(origin = self.world_position - (0, self.scale_y / 2 - 0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_x + math.tan(math.radians(self.slope)))
+
+                    if not top_x_ray.hit:
+                        self.x += x_movement
+                        height_ray = terraincast(origin = self.world_position + (sign(x_movement) * self.scale_x / 2, -self.scale_y / 2, 0), terrain = self.terrain, direction = (0, 1, 0))
+                        if height_ray.hit:
+                            self.y += height_ray.distance / 5
+
+            if z_movement != 0:
+                direction = (0, 0, sign(z_movement))
+                z_ray = terraincast(origin = self.world_position, terrain = self.terrain, direction = direction, distance = self.scale_z + abs(z_movement))
+
+                if not z_ray.hit:
+                    self.z += z_movement
+                else:
+                    top_z_ray = terraincast(origin = self.world_position - (0, self.scale_y / 2 -0.1, 0), terrain = self.terrain, direction = direction, distance = self.scale_z + math.tan(math.radians(self.slope)))
+
+                    if not top_z_ray.hit:
+                        self.z += z_movement
+                        height_ray = terraincast(origin = self.world_position + (0, -self.scale_y / 2, sign(z_movement) * self.scale_z / 2), terrain = self.terrain, direction = (0, 1, 0))
+                        if height_ray.hit:
+                            self.y += height_ray.distance / 5
 
         camera.rotation_x -= mouse.velocity[1] * self.sensitivity * 30 * time.dt
         self.rotation_y += mouse.velocity[0] * self.sensitivity * 30 * time.dt

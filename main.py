@@ -18,23 +18,40 @@ Sky(texture = "sky")
 PointLight(parent = camera, color = color.white, position = (0, 10, -1.5))
 AmbientLight(color = color.rgba(100, 100, 100, 0.1))
 
-player = Player((-1000, 100, 0), map.terrain)
+player = Player((1638, 54, 437), map)
 player.jump_height = 0.3
-player.SPEED = 2
-player.position = (-527, 100, 159)
+player.position = (1980, 200, 96)
 
 player.sword.equipped = False
 player.bow.equipped = False
 player.shield.equipped = False
 
-health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
+player.sword.enable()
+player.sword.position = (2012, 130, 97)
 
-enemy = Enemy((player.x + 50, 50, player.z + 50), map.terrain)
-enemy.follow = player
+health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
 hit_entity = Entity(model = "sphere", scale = 0.1)
 
 spring = Spring()
+
+enemy_1 = Enemy((0, 0, 0), map.terrain)
+enemy_1.follow = player
+enemy_1.disable()
+
+enemy_2 = Enemy((0, 0, 0), map.terrain)
+enemy_2.follow = player
+enemy_2.disable()
+
+enemy_3 = Enemy((0, 0, 0), map.terrain)
+enemy_3.follow = player
+enemy_3.disable()
+
+enemy_1.position = (1980, 140, 96)
+enemy_2.position = (1996, 140, 122)
+enemy_3.position = (1988, 140, 112)
+
+debug = False
 
 def update():
     if held_keys["escape"]:
@@ -42,9 +59,22 @@ def update():
     if held_keys["left mouse"]:
         mouse.locked = True
     if held_keys["g"]:
-        player.position = (16, 100, 14)
-    if player.y <= -100:
-        player.position = (16, 100, 14)
+        player.position = (1638, 54, 437)
+    if player.y <= -50:
+        player.y = player.y + 500
+
+    global debug
+
+    if held_keys["right shift"]:
+        debug = not debug
+
+    if held_keys["p"]:
+        print(player.position)
+
+    if debug == True:
+        player.disable()
+        player.sword.disable(); player.bow.disable(); player.shield.disable()
+        EditorCamera()
 
     health_text.text = str(player.health)
 
@@ -81,5 +111,14 @@ def update():
         movement = spring.update(time.dt)
         spring.shove(Vec3(mouse.y, mouse.x, 0))
         player.shield.position = (movement.y * 0.2, movement.x * 0.2, movement.z * 0.2) + (-1, -1, 1)
+
+    ###############################
+    # STORY
+    ###############################
+
+    if player.sword.equipped == True:
+        enemy_1.enable()
+        enemy_2.enable()
+        enemy_3.enable()
 
 app.run()
