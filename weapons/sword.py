@@ -83,3 +83,13 @@ class Sword(FrameAnimation3d):
     def pause_sword(self):
         self.ready = True
         self.pause()
+
+    def equip(self):
+        self.equipped = True
+        self.gravity = False
+        self.parent = camera
+        self.position = (1.5, -2.2, 1.8)
+        self.rotation = (0, 90, 0)
+
+        if self.bow.equipped == True:
+            self.bow.disable()

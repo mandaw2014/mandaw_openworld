@@ -78,3 +78,14 @@ class Shield(FrameAnimation3d):
         self.start()
         self.pause()
         self.strokes = 0
+
+    def equip(self):
+        self.equipped = True
+        self.parent = camera
+        self.position = (-1, -1, 1)
+        self.rotation = (0, 90, 0)
+        self.gravity = False
+        
+        if self.bow.equipped == True:
+            self.bow.disable()
+            self.arrow.disable()

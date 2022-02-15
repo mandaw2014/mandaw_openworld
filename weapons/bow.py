@@ -82,3 +82,17 @@ class Bow(Entity):
                 destroy(self.player.arrow, delay = 0.07)
             
             destroy(self.player.arrow, delay = 1)
+
+    def equip(self):
+        self.equipped = True
+        self.gravity = False
+        self.parent = camera
+        self.position = (0.5, 0, 1)
+        self.rotation = (0, 0, 0)
+        self.shield.disable()
+
+        if self.sword.equipped == True:
+            self.sword.disable()
+            self.arrow.enable() 
+        if self.shield.equipped == True:
+            self.shield.disable()

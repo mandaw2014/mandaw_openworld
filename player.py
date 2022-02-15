@@ -20,7 +20,7 @@ class Player(Entity):
         )
 
         self.collider = BoxCollider(self, center = Vec3(0, 1, 0), size = Vec3(1, 1, 1))
-        mouse.locked = True
+        # mouse.locked = True
         camera.parent = self
         camera.position = (0, 2, 0)
         camera.rotation = (0, 0, 0)

@@ -6,8 +6,14 @@ from enemy import Enemy
 
 from springs import Spring
 from map import Map
+from mainmenu import MainMenu
+
+from tasks.task_01 import Task1_FindSword
 
 app = Ursina()
+
+window.title = "MandawOpenWorld"
+mouse.locked = False
 
 scene.fog_density = 0.001
 
@@ -18,16 +24,16 @@ Sky(texture = "sky")
 PointLight(parent = camera, color = color.white, position = (0, 10, -1.5))
 AmbientLight(color = color.rgba(100, 100, 100, 0.1))
 
-player = Player((1638, 54, 437), map)
+player = Player((0, 0, 0), map)
 player.jump_height = 0.3
-player.position = (1980, 200, 96)
-
-player.sword.equipped = False
-player.bow.equipped = False
-player.shield.equipped = False
+player.disable()
+player.position = (0, 300, 0)
+player.rotation = (0, 180, 0)
 
 player.sword.enable()
 player.sword.position = (2012, 130, 97)
+
+mainmenu = MainMenu(player)
 
 health_text = Text(text = str(player.health), size = 0.05, x = -0.78, y = 0.48)
 
@@ -52,6 +58,8 @@ enemy_2.position = (1996, 140, 122)
 enemy_3.position = (1988, 140, 112)
 
 debug = False
+
+task_1 = Task1_FindSword(player)
 
 def update():
     if held_keys["escape"]:
@@ -116,9 +124,10 @@ def update():
     # STORY
     ###############################
 
-    if player.sword.equipped == True:
-        enemy_1.enable()
-        enemy_2.enable()
-        enemy_3.enable()
+    if mainmenu.story:
+        while player.sword.equipped == False:
+            task_1.find_sword()
+            player.sword.enable()
+            player.sword.position = (2012, 130, 97)
 
 app.run()
