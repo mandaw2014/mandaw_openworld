@@ -1,4 +1,5 @@
 from ursina import *
+from terraincast import terraincast
 import math
 
 from weapons.sword import Sword
@@ -43,6 +44,8 @@ class Player(Entity):
         self.map = map
 
         self.terrain = self.map.terrain
+        self.explore = False
+        self.story = False
 
         self.sword = Sword(terrain = self.terrain)
         self.bow = Bow(terrain = self.terrain)

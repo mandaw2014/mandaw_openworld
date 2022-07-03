@@ -1,5 +1,6 @@
 from ursina import *
 from village import Village
+from terrain import Terrain
 
 class Map(object):
     def __init__(self):

@@ -1,5 +1,6 @@
 from ursina import *
 from ursina import curve
+from terraincast import terraincast
 
 class Bow(Entity):
     def __init__(self, model = "bow.obj", terrain = None):

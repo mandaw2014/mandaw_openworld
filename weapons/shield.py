@@ -1,4 +1,5 @@
 from ursina import *
+from terraincast import terraincast
 
 class Shield(FrameAnimation3d):
     def __init__(self, rotation = (0, 90, 90), position = (-522, 18.5, 191), terrain = None):
@@ -16,7 +17,7 @@ class Shield(FrameAnimation3d):
             rotation = rotation
         )
 
-        self.equipped = False
+        self.equipped = True
         self.strokes = 0
         self.player = None
         self.sword = None

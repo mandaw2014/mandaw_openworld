@@ -1,4 +1,5 @@
 from ursina import *
+from terraincast import terraincast
 
 class Sword(FrameAnimation3d):
     def __init__(self, rotation = (0, 0, 0), parent = scene, terrain = None):
